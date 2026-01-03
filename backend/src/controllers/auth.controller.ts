@@ -7,7 +7,7 @@ import {
     verifyEmail, 
     resetPassword, 
     refreshAccessToken
-} from "../services/auth.service.js"
+} from "../services/auth.service"
 
 const registerSchema = z.object({
     username: z.string().min(3),

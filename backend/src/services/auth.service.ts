@@ -1,8 +1,8 @@
 import argon2 from "argon2"
-import { PrismaClient } from "../generated/prisma/index.js"
+import { PrismaClient } from "@prisma/client"
 import { randomBytes } from "node:crypto"
-import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service.js"
-import { generateAccessToken, generateRefresToken } from "../utils/jwt.js"
+import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service"
+import { generateAccessToken, generateRefresToken } from "../utils/jwt"
 import jwt from "jsonwebtoken"
 
 const prisma = new PrismaClient()

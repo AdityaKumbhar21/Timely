@@ -1,13 +1,13 @@
 import {Resend} from "resend"
 
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY!)
 
 export const sendVerificationEmail = async(email: string, name: string, code: string) =>{
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${code}&email=${email}`
 
     await resend.emails.send({
-        from: 'Timely <no-reply@yourdomain.com>',
+        from: 'onboarding@resend.dev',
         to: email,
         subject: 'Verify your Timely account',
         html: `
