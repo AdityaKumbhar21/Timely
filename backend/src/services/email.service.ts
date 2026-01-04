@@ -24,7 +24,7 @@ export const sendPasswordResetEmail = async(email: string, token: string) =>{
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
 
     await resend.emails.send({
-        from: 'Timely <no-reply@yourdomain.com>',
+        from: 'onboarding@resend.dev',
         to: email,
         subject: 'Reset your Timely password',
         html: `

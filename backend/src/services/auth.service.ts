@@ -66,7 +66,7 @@ export const loginUser = async(identifier: string, password: string) =>{
         throw new Error("User not Found")
     }
 
-    const isPasswordValid = argon2.verify(user.passwordHash, password)
+    const isPasswordValid = await argon2.verify(user.passwordHash, password)
 
     if(!isPasswordValid){
         throw new Error("Invalid Credentials")
@@ -88,13 +88,10 @@ export const loginUser = async(identifier: string, password: string) =>{
     return {user, accessToken, refreshToken}
 }
 
-export const forgotPassword = async(identifier: string) =>{
+export const forgotPassword = async(email: string) =>{
     const user = await prisma.user.findFirst({
         where: {
-            OR: [
-                {email: identifier.toLowerCase()},
-                {username: identifier}
-            ]
+            email
         }
     })
 
