@@ -146,7 +146,7 @@ export const refreshAccessToken = async(refreshToken: string) =>{
     }
 
     try {
-        const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKE_SECRET!)
+        const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!)
         return generateAccessToken((payload as any).userId)
 
     } catch (error) {

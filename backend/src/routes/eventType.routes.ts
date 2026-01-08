@@ -10,7 +10,7 @@ router.use(authenticate)
 router.post("/", createEventType)
 router.get("/", getEventType)
 router.get("/:id", getEventTypeById)
-router.post("/:id", updateEventType)
+router.put("/:id", updateEventType)
 router.delete("/:id", deleteEvent)
 
 

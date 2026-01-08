@@ -110,11 +110,13 @@ export const reset = async(req: Request, res: Response) =>{
 export const refresh = async(req: Request, res: Response) =>{
     try {
         const refreshToken = req.cookies.refreshToken
-        if (!refreshToken) throw new Error('No refresh token')
         
+        if (!refreshToken) throw new Error('No refresh token')
+
         const accessToken = await refreshAccessToken(refreshToken)
         res.json({accessToken})
     } catch (error: any) {
+        console.log("Error refresh: ", error);
         res.status(401).json({ error: 'Invalid refresh token' });
   }
 }

@@ -2,6 +2,7 @@ import {Request, Response, NextFunction} from 'express';
 import jwt from 'jsonwebtoken';
 import {verifyAccessToken, verifyRefreshToken} from "../utils/jwt"
 import { PrismaClient } from '@prisma/client';
+import { log } from 'node:console';
 
 const prisma = new PrismaClient()
 
@@ -29,7 +30,7 @@ export const authenticate = async(req: Request, res: Response, next: NextFunctio
         }
 
         const token = authHeader.split(" ")[1]
-
+        
         const payload =  verifyAccessToken(token) as {userId : string}
 
         const user = await prisma.user.findFirst({
@@ -51,6 +52,8 @@ export const authenticate = async(req: Request, res: Response, next: NextFunctio
         req.user = user
         next()
     } catch (error) {
+        console.log("Error middlware: ", error);
+        
         res.status(401).json({message: "Invalid or expired access token"})
     }
 

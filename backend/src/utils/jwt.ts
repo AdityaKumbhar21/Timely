@@ -11,7 +11,7 @@ export const generateAccessToken = (userId: string) =>{
 
 
 export const generateRefresToken = (userId: string) =>{
-    return jwt.sign({userId}, ACCESS_TOKEN_SECRET, {expiresIn: "30d"})
+    return jwt.sign({userId}, REFRESH_TOKEN_SECRET, {expiresIn: "30d"})
 }
 
 export const verifyAccessToken = (token: string) =>{

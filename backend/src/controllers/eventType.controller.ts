@@ -43,7 +43,9 @@ export const createEventType = async(req: Request, res: Response)=>{
 
         res.status(201).json({eventType})
     } catch (error: any) {
-        res.status(401).json({message: error.Error.message})
+        console.log("Error in create: ", error);
+        
+        res.status(401).json({message: "Internal server error"})
     }
 }
 
@@ -69,7 +71,7 @@ export const getEventType = async(req: Request, res: Response) =>{
 
 export const getEventTypeById = async(req: Request, res: Response) =>{
     try {
-        const id = req.params
+        const {id} = req.params
         const userId = req.user!.id
 
         const eventType = await prisma.eventType.findFirst({
@@ -86,7 +88,7 @@ export const getEventTypeById = async(req: Request, res: Response) =>{
 
         res.status(200).json(eventType)
     } catch (error: any) {
-        res.status(401).json({message: error.Error.message})
+        res.status(401).json({message: "Internal server error"})
     }
 }
 
@@ -120,7 +122,7 @@ export const updateEventType = async(req: Request, res: Response) =>{
 
         res.status(200).json({eventType: updatedEventType})
     } catch (error: any) {
-        res.status(401).json({message: error.Error.message})
+        res.status(401).json({message: "Internal server error"})
     }
 }
 

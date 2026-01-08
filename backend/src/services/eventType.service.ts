@@ -9,7 +9,7 @@ export const generateUniqueSlug = async(title: string, userId: string): Promise<
     let uniqueSlug = slug
     let counter = 1
 
-    while(await prisma.user.findFirst({where: {id: userId, slug: uniqueSlug}})){
+    while(await prisma.eventType.findFirst({where: {id: userId, slug: uniqueSlug}})){
         uniqueSlug = `${slug}-${counter}`
         counter ++
     }
