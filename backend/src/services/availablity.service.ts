@@ -55,8 +55,51 @@ export const getAvailableSlots = async(
         const rules = eventType.availabilityRules.filter(
             r => r.dayOfWeek === dayOfWeek || r.dateOverride?.toDateString() === current.toJSDate().toDateString()
         )
-    }
 
-    //TODO: complete this function
+        for (const rule of rules){
+            let slotStart = DateTime.fromFormat(rule.startTime, "HH:mm", {zone: hostTimezone})
+            .set({year: current.year, day: current.day, month: current.month})
+            .toJSDate()
+
+            let slotEnd = DateTime.fromFormat(rule.endTime, "HH:mm", {zone: hostTimezone})
+            .set({year: current.year, day: current.day, month: current.month})
+            .toJSDate()
+
+            while(slotStart < slotEnd){
+                const proposedEnd = addMinutes(slotStart, eventType.durationMinutes)
+
+                if(proposedEnd > slotEnd) break
+
+                const effectiveStart = addMinutes(slotStart, -eventType.bufferBeforeMinutes)
+                const effectiveEnd = addMinutes(proposedEnd, eventType.bufferAfterMinutes)
+
+                const isOverlapping = bookedIntervals.some(interval =>
+                    areIntervalsOverlapping(
+                        {start: effectiveStart, end: proposedEnd},
+                        {start: interval.start, end: interval.end}
+                    )
+                )
+
+                const dayStart = current.startOf("day").toJSDate()
+                const dayEnd = current.endOf("day").toJSDate()
+
+                const dayBookings = await prisma.booking.count({
+                    where:{
+                        eventTypeId,
+                        startTime: {gte: dayStart, lte: dayEnd},
+                        status: "CONFIRMED"
+                    }
+                })
+
+                if(!isOverlapping && (!eventType.dailyLimit || dayBookings < eventType.dailyLimit)){
+                    slots.push({start: slotStart, end: proposedEnd})
+                }
+
+                slotStart = proposedEnd
+            }
+        }
+        current = current.plus({days: 1})
+    }
+    
     return slots
 }   
