@@ -1,7 +1,7 @@
 import { Booking, EventType, User } from "@prisma/client"
 import { DateTime } from "luxon"
 import {Resend} from "resend"
-
+import { formatBookingTime } from "../utils/dateFormat"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -113,10 +113,42 @@ export const sendConfirmationEmail = async(booking: BookingWithRelations) =>{
             from: "onboarding@resend.dev",
             to: hostEmail,
             subject: `New Booking:  ${guestName} - ${eventTitle}`,
-            html: hostEmail
+            html: hostNotificationHtml
         })
 
     } catch (error) {
         console.log('Failed to send confirmation emails:', error);
     }
 }
+
+// TODO: Remove the error and complete the cancellation logic
+
+export const sendCancellationEmails = async (booking: BookingWithRelations) => {
+  const htmlGuest = `
+    <h2>Booking Cancelled</h2>
+    <p>Hi ${booking.guestName},</p>
+    <p>Your booking with ${booking.eventType.user.name} has been cancelled.</p>
+    <p>Original time: ${formatBookingTime(booking.startTime, 'UTC', 'full')}</p>
+  `;
+
+  const htmlHost = `
+    <h2>Cancellation Notice</h2>
+    <p>${booking.guestName} has cancelled their booking.</p>
+    <p>Original time: ${formatBookingTime(booking.startTime, booking.eventType.user.timezone || "UTC", 'full')}</p>
+  `;
+
+  await resend.emails.send([
+    {
+      from: 'Timely <no-reply@yourdomain.com>',
+      to: booking.guestEmail,
+      subject: 'Your booking has been cancelled',
+      html: htmlGuest,
+    },
+    {
+      from: 'Timely <no-reply@yourdomain.com>',
+      to: booking.eventType.user.email,
+      subject: 'Booking cancellation notice',
+      html: htmlHost,
+    },
+  ]);
+};
