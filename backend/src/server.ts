@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.routes"
 import publicRoutes from "./routes/public.routes"
 import availabilityRoutes from "./routes/availability.routes"
 import bookingRoutes from "./routes/booking.routes"
+import './jobs/reminder.job'
 
 const app = express();
 const PORT = process.env.PORT || 3000;

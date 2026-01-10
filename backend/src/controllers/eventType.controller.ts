@@ -14,7 +14,8 @@ const eventTypeSchema = z.object({
     bufferBeforeMinutes: z.number().int().positive().min(0).default(0),
     bufferAfterMinutes: z.number().int().positive().min(0).default(0),
     dailyLimit: z.number().int().positive().nullable().optional(),
-    color: z.string().regex(/^#[0-9A-F]{6}$/i).default("#3498db")
+    color: z.string().regex(/^#[0-9A-F]{6}$/i).default("#3498db"),
+    defaultVideoLink: z.string().url().nullable().optional()
 })
 
 

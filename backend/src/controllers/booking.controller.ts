@@ -21,7 +21,8 @@ const bookingSchema = z.object({
             answerText: z.string()
         })
     ).optional(),
-    timezone: z.string().default("UTC")
+    timezone: z.string().default("UTC"),
+    videoLink: z.string().url().optional()
 })
 
 export const creatBooking = async(req: Request, res: Response) =>{
@@ -69,6 +70,8 @@ export const creatBooking = async(req: Request, res: Response) =>{
 
             const cancellationToken = randomBytes(32).toString("hex")
 
+            const finalVideoLink = body.videoLink || eventType.defaultVideoLink
+
             const booking = await tx.booking.create({
                 data:{
                     eventTypeId: body.eventTypeId,
@@ -78,7 +81,8 @@ export const creatBooking = async(req: Request, res: Response) =>{
                     guestNotes: body.guestNotes,
                     startTime: start,
                     endTime: end,
-                    cancellationToken
+                    cancellationToken,
+                    videoLink: finalVideoLink
                 }
             })
 

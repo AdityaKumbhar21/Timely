@@ -48,6 +48,7 @@ model EventType{
   bufferAfterMinutes Int @default(0)
   dailyLimit Int?
   color String @default("#3498db")
+  defaultVideoLink String?
   bookings Booking[]
   availabilityRules AvailabilityRule[]
   customQuestions CustomQuestion[]
