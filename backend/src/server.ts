@@ -24,7 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/event-type', eventTypeRoutes);
 app.use("/api/user", userRoutes)
 app.use("/api/public", publicRoutes)
-app.use("/api/availabilti",availabilityRoutes )
+app.use("/api/availability", availabilityRoutes)
 app.use("/api/booking", bookingRoutes)
 
 app.listen(PORT, () => {

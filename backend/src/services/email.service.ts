@@ -121,34 +121,69 @@ export const sendConfirmationEmail = async(booking: BookingWithRelations) =>{
     }
 }
 
-// TODO: Remove the error and complete the cancellation logic
-
 export const sendCancellationEmails = async (booking: BookingWithRelations) => {
-  const htmlGuest = `
-    <h2>Booking Cancelled</h2>
-    <p>Hi ${booking.guestName},</p>
-    <p>Your booking with ${booking.eventType.user.name} has been cancelled.</p>
-    <p>Original time: ${formatBookingTime(booking.startTime, 'UTC', 'full')}</p>
+  const { guestName, guestEmail, startTime, eventType } = booking;
+  const host = eventType.user;
+  const hostName = host.name || host.username;
+  const hostEmail = host.email;
+  const eventTitle = eventType.title;
+  const hostTimeZone = host.timezone || "UTC";
+
+  const guestCancellationHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Booking Cancelled</h2>
+      <p>Hi ${guestName},</p>
+      <p>Your booking with <strong>${hostName}</strong> has been cancelled.</p>
+      
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <strong>Event:</strong> ${eventTitle}<br>
+        <strong>Original time:</strong> ${formatBookingTime(startTime, 'UTC')}<br>
+      </div>
+
+      <p>If you'd like to reschedule, please visit our website to book a new time.</p>
+
+      <p style="margin-top: 30px;">Thank you for using Timely!</p>
+      <p style="color: #666; font-size: 14px;">
+        ${process.env.APP_NAME} • <a href="${process.env.FRONTEND_URL}">Visit website</a>
+      </p>
+    </div>
   `;
 
-  const htmlHost = `
-    <h2>Cancellation Notice</h2>
-    <p>${booking.guestName} has cancelled their booking.</p>
-    <p>Original time: ${formatBookingTime(booking.startTime, booking.eventType.user.timezone || "UTC", 'full')}</p>
+  const hostCancellationHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Booking Cancellation Notice</h2>
+      <p>Hi ${hostName},</p>
+      <p><strong>${guestName}</strong> (${guestEmail}) has cancelled their booking.</p>
+      
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <strong>Event:</strong> ${eventTitle}<br>
+        <strong>Original time:</strong> ${formatBookingTime(startTime, hostTimeZone)}<br>
+      </div>
+
+      <p>You can view all bookings in your <a href="${process.env.FRONTEND_URL}/dashboard">dashboard</a>.</p>
+
+      <p style="margin-top: 30px;">Thank you for using Timely!</p>
+      <p style="color: #666; font-size: 14px;">
+        ${process.env.APP_NAME} Team
+      </p>
+    </div>
   `;
 
-  await resend.emails.send([
-    {
-      from: 'Timely <no-reply@yourdomain.com>',
-      to: booking.guestEmail,
-      subject: 'Your booking has been cancelled',
-      html: htmlGuest,
-    },
-    {
-      from: 'Timely <no-reply@yourdomain.com>',
-      to: booking.eventType.user.email,
-      subject: 'Booking cancellation notice',
-      html: htmlHost,
-    },
-  ]);
+  try {
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: guestEmail,
+      subject: `Your booking with ${hostName} has been cancelled`,
+      html: guestCancellationHtml,
+    });
+
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: hostEmail,
+      subject: `Booking Cancelled: ${guestName} - ${eventTitle}`,
+      html: hostCancellationHtml,
+    });
+  } catch (error) {
+    console.log('Failed to send cancellation emails:', error);
+  }
 };

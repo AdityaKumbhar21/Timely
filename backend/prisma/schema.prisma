@@ -110,6 +110,7 @@ model Booking{
   eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([startTime, endTime, userId, eventTypeId])
+  @@unique([eventTypeId, startTime, status])
 }
 
 model CustomAnswer{

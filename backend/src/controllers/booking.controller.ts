@@ -4,7 +4,7 @@ import { Request,Response } from "express";
 import { DateTime } from "luxon";
 import { randomBytes } from "node:crypto";
 import z from "zod";
-import { sendConfirmationEmail } from "../services/email.service";
+import { sendCancellationEmails, sendConfirmationEmail } from "../services/email.service";
 
 const prisma = new PrismaClient()
 
@@ -26,9 +26,9 @@ const bookingSchema = z.object({
 })
 
 export const creatBooking = async(req: Request, res: Response) =>{
-    const body = bookingSchema.parse(req.body)
-
     try {
+        const body = bookingSchema.parse(req.body)
+
         return await prisma.$transaction(async (tx)=>{
             const eventType = await tx.eventType.findUnique({
                 where: {id: body.eventTypeId},
@@ -39,6 +39,14 @@ export const creatBooking = async(req: Request, res: Response) =>{
             
             const start = DateTime.fromISO(body.startTime, {zone: body.timezone}).toJSDate()
             const end = addMinutes(start, eventType.durationMinutes)
+
+            // Pessimistic lock: lock existing bookings for this event type to prevent race conditions
+            await tx.$executeRaw`
+                SELECT id FROM "Booking" 
+                WHERE "eventTypeId" = ${body.eventTypeId} 
+                AND status = 'CONFIRMED'
+                FOR UPDATE
+            `
 
             const overlapping = await tx.booking.findFirst({
                 where: {
@@ -123,5 +131,44 @@ export const creatBooking = async(req: Request, res: Response) =>{
             return res.status(400).json({ error: 'Invalid input', details: error.message });
         }
         res.status(400).json({ error: error.message || 'Failed to create booking' });
+    }
+}
+
+
+export const cancelBooking = async(req: Request, res: Response) =>{
+    const {token} = req.params
+    try {
+        const booking = await prisma.booking.findFirst({
+            where: {cancellationToken: token},
+            include:{ eventType: {include: {user: true}}}
+        })
+
+        if(!booking){
+            return res.status(404).json({message: "Booking not found."})
+        }
+
+        if(booking.status !== "CONFIRMED"){
+            return res.status(400).json({message: "Booking cannot be cancelled"})
+        }
+
+        const hoursBefore = DateTime.fromJSDate(booking.startTime).diffNow("hours").hours
+
+        if(hoursBefore < 1){
+            return res.status(400).json({message: "Cannot cancel meeting before 1 hour of start."})
+        }
+
+        await prisma.booking.update({
+            where: {id: booking.id},
+            data : {
+                status : "CANCELLED"
+            }
+        })
+
+        await sendCancellationEmails(booking)
+
+        res.status(200).json({message: "Booking cancelled successfully."})
+
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to cancel booking' });
     }
 }

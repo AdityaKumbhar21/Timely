@@ -32,18 +32,27 @@ export const register = async(req: Request, res: Response) =>{
         })
     }
     catch(error: any){
-        res.status(401).json({error: error.message})
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.message })
+        }
+        if (error.message?.includes('already exists')) {
+            return res.status(409).json({ error: error.message })
+        }
+        res.status(500).json({error: error.message || 'Registration failed'})
     }
 }
 
 export const verify = async(req: Request, res: Response) =>{
     try {
-        const {email, code} = req.query 
+        const {email, code} = req.query
+        if (!email || !code) {
+            return res.status(400).json({ message: "Email and code are required" })
+        }
         await verifyEmail(email as string, code as string)
         res.json({message: "Email verified."})
 
     } catch (error: any) {
-        res.status(401).json({message: error.message})
+        res.status(400).json({message: error.message})
     }
 }
 
@@ -88,7 +97,10 @@ export const forgot = async(req: Request, res: Response) =>{
         res.json({message: "If email exists, reset link sent."})
 
     } catch (error: any) {
-        res.status(401).json({message: error.message})
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Invalid email format' })
+        }
+        res.status(500).json({message: 'Failed to process request'})
     }
 }
 
@@ -103,7 +115,13 @@ export const reset = async(req: Request, res: Response) =>{
         res.json({message: "Password reset successful."})
 
     } catch (error: any) {
-        res.status(401).json({message: error.message})
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Invalid input' })
+        }
+        if (error.message?.includes('Invalid or expired')) {
+            return res.status(400).json({ message: error.message })
+        }
+        res.status(500).json({message: 'Failed to reset password'})
     }
 }
 

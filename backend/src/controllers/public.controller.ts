@@ -61,6 +61,6 @@ export const getPublicEventType = async(req: Request, res: Response) =>{
 
         res.status(200).json({eventType})
     } catch (error) {
-        res.status(401).json({message: "Failed to fetch booking page"})
+        res.status(500).json({message: "Failed to fetch booking page"})
     }
 }
