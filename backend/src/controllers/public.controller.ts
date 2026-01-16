@@ -64,3 +64,44 @@ export const getPublicEventType = async(req: Request, res: Response) =>{
         res.status(500).json({message: "Failed to fetch booking page"})
     }
 }
+
+export const getUserEventTypes = async(req: Request, res: Response) =>{
+    const {username} = req.params
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: {username},
+            select: {
+                name: true,
+                username: true,
+                bio: true,
+            }
+        })
+
+        if(!user){
+            return res.status(404).json({message: "User not found."})
+        }
+
+        const eventTypes = await prisma.eventType.findMany({
+            where: {
+                user: {username}
+            },
+            select:{
+                id: true,
+                title: true,
+                slug: true,
+                description: true,
+                durationMinutes: true,
+                locationType: true,
+                color: true,
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        })
+
+        res.status(200).json({user, eventTypes})
+    } catch (error) {
+        res.status(500).json({message: "Failed to fetch user event types"})
+    }
+}

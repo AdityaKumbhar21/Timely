@@ -172,3 +172,31 @@ export const cancelBooking = async(req: Request, res: Response) =>{
         res.status(500).json({ error: 'Failed to cancel booking' });
     }
 }
+
+export const getMyBookings = async(req: Request, res: Response) => {
+    const userId = (req as any).userId
+    
+    try {
+        const bookings = await prisma.booking.findMany({
+            where: {userId},
+            include: {
+                eventType: {
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        durationMinutes: true,
+                        locationType: true,
+                        locationDetails: true,
+                        defaultVideoLink: true,
+                    }
+                }
+            },
+            orderBy: {startTime: "asc"}
+        })
+
+        res.status(200).json({bookings})
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch bookings' });
+    }
+}
