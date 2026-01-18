@@ -87,10 +87,12 @@ export default function NewEventTypePage() {
       };
       return eventTypeApi.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['eventTypes'] });
-      toast.success('Event type created!');
-      router.push('/event-types');
+      toast.success('Event type created! Now set your availability.');
+      // Redirect to availability page with the new event type ID
+      const eventTypeId = response.data.eventType.id;
+      router.push(`/availability?eventTypeId=${eventTypeId}&new=true`);
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };

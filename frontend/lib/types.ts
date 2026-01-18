@@ -37,6 +37,8 @@ export interface EventType {
   dailyLimit?: number;
   color: string;
   defaultVideoLink?: string;
+  availableFrom?: string;
+  availableTo?: string;
   availabilityRules: AvailabilityRule[];
   customQuestions: CustomQuestion[];
   _count?: {
@@ -57,6 +59,8 @@ export interface PublicEventType {
   bufferAfterMinutes: number;
   bufferBeforeMinutes: number;
   color: string;
+  availableFrom?: string;
+  availableTo?: string;
   user: {
     name: string;
     username: string;

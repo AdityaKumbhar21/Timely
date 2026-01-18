@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { format, addDays, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { format, addDays, startOfMonth, endOfMonth, isSameDay, isAfter, isBefore, startOfDay } from 'date-fns';
 import { publicApi, availabilityApi, bookingApi } from '@/lib/api';
 import { PublicEventType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -152,6 +152,40 @@ export default function BookingPage({ params }: { params: Promise<{ username: st
 
   const availableDates = Object.keys(allSlots).map(d => new Date(d));
 
+  // Calculate the date range from event type
+  const availableFromDate = useMemo(() => {
+    if (eventTypeData?.availableFrom) {
+      return startOfDay(new Date(eventTypeData.availableFrom));
+    }
+    return startOfDay(new Date()); // Default to today
+  }, [eventTypeData?.availableFrom]);
+
+  const availableToDate = useMemo(() => {
+    if (eventTypeData?.availableTo) {
+      return startOfDay(new Date(eventTypeData.availableTo));
+    }
+    return addDays(new Date(), 90); // Default to 90 days from now
+  }, [eventTypeData?.availableTo]);
+
+  const isDateDisabled = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const today = startOfDay(new Date());
+    
+    // Before today
+    if (isBefore(date, today)) return true;
+    
+    // Before available from date
+    if (isBefore(date, availableFromDate)) return true;
+    
+    // After available to date
+    if (isAfter(date, availableToDate)) return true;
+    
+    // No slots available
+    if (!allSlots[dateStr] || allSlots[dateStr].length === 0) return true;
+    
+    return false;
+  };
+
   const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const timeSlotsForDate = allSlots[selectedDateStr] || [];
 
@@ -295,10 +329,7 @@ export default function BookingPage({ params }: { params: Promise<{ username: st
                           setSelectedDate(date);
                           setSelectedTime(null);
                         }}
-                        disabled={(date) => {
-                          const dateStr = format(date, 'yyyy-MM-dd');
-                          return date < new Date() || !allSlots[dateStr] || allSlots[dateStr].length === 0;
-                        }}
+                        disabled={isDateDisabled}
                         modifiers={{
                           available: availableDates,
                         }}
@@ -306,6 +337,8 @@ export default function BookingPage({ params }: { params: Promise<{ username: st
                           available: { fontWeight: 'bold' },
                         }}
                         className="rounded-lg border p-3"
+                        fromDate={availableFromDate}
+                        toDate={availableToDate}
                       />
                     </div>
 

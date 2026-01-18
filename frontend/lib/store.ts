@@ -14,9 +14,11 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  isHydrated: boolean;
   setAuth: (user: User, accessToken: string) => void;
   updateUser: (user: Partial<User>) => void;
   logout: () => void;
+  setHydrated: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -25,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       isAuthenticated: false,
+      isHydrated: false,
       setAuth: (user, accessToken) => {
         localStorage.setItem('accessToken', accessToken);
         set({ user, accessToken, isAuthenticated: true });
@@ -37,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('accessToken');
         set({ user: null, accessToken: null, isAuthenticated: false });
       },
+      setHydrated: () => set({ isHydrated: true }),
     }),
     {
       name: 'auth-storage',
@@ -45,6 +49,25 @@ export const useAuthStore = create<AuthState>()(
         accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated 
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
     }
   )
 );
+
+// Sync auth state across tabs
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'auth-storage') {
+      const newState = e.newValue ? JSON.parse(e.newValue) : null;
+      if (newState?.state) {
+        useAuthStore.setState({
+          user: newState.state.user,
+          accessToken: newState.state.accessToken,
+          isAuthenticated: newState.state.isAuthenticated,
+        });
+      }
+    }
+  });
+}

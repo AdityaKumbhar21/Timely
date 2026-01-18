@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, User, Globe, Link as LinkIcon } from 'lucide-react';
+import { Loader2, User, Globe, Link as LinkIcon, Sparkles, Settings } from 'lucide-react';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -49,13 +49,13 @@ const timezones = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, isAuthenticated, updateUser } = useAuthStore();
+  const { user, isAuthenticated, isHydrated, updateUser } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (isHydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isHydrated, router]);
 
   const {
     register,
@@ -87,26 +87,40 @@ export default function SettingsPage() {
     updateMutation.mutate(data);
   };
 
-  if (!isAuthenticated) {
-    return null;
+  if (!isHydrated || !isAuthenticated) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 via-white to-violet-50/30 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+          <p className="text-sm text-gray-500">Loading settings...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 via-white to-violet-50/30">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-muted-foreground mt-1">
+          <div className="flex items-center gap-2 mb-1">
+            <Settings className="h-5 w-5 text-violet-600" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Settings
+            </h1>
+          </div>
+          <p className="text-gray-500">
             Manage your account settings and preferences
           </p>
         </div>
 
         <div className="space-y-6">
           {/* Profile Settings */}
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <div className="p-2 bg-violet-100 rounded-lg">
+                  <User className="h-5 w-5 text-violet-600" />
+                </div>
                 Profile
               </CardTitle>
               <CardDescription>
@@ -175,10 +189,12 @@ export default function SettingsPage() {
           </Card>
 
           {/* Account Info */}
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <LinkIcon className="h-5 w-5" />
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <LinkIcon className="h-5 w-5 text-blue-600" />
+                </div>
                 Your Booking Link
               </CardTitle>
               <CardDescription>
@@ -187,11 +203,12 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-gray-100 rounded-lg px-4 py-3 font-mono text-sm">
+                <div className="flex-1 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg px-4 py-3 font-mono text-sm border border-gray-200">
                   {typeof window !== 'undefined' ? window.location.origin : 'https://timely.app'}/{user?.username}
                 </div>
                 <Button
                   variant="outline"
+                  className="border-gray-200 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700"
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/${user?.username}`);
                     toast.success('Link copied!');
@@ -204,10 +221,12 @@ export default function SettingsPage() {
           </Card>
 
           {/* Account Details */}
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Globe className="h-5 w-5 text-green-600" />
+                </div>
                 Account Details
               </CardTitle>
             </CardHeader>

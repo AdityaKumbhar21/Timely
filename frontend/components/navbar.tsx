@@ -13,12 +13,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, Menu, User, Settings, LogOut, Clock } from 'lucide-react';
+import { Calendar, Menu, User, Settings, LogOut, Clock, CalendarClock, CalendarCheck } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 
 export function Navbar() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isHydrated, logout } = useAuthStore();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -41,12 +41,16 @@ export function Navbar() {
       .slice(0, 2);
   };
 
+  // Show consistent UI during hydration
+  const showAuthenticatedUI = isHydrated && isAuthenticated;
+  const showUnauthenticatedUI = isHydrated && !isAuthenticated;
+
   return (
     <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 p-2 rounded-lg">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 p-2 rounded-lg transition-transform group-hover:scale-105">
               <Clock className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
@@ -55,23 +59,26 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4">
-            {isAuthenticated ? (
+          <div className="hidden md:flex items-center gap-2">
+            {showAuthenticatedUI ? (
               <>
                 <Link href="/dashboard">
-                  <Button variant="ghost">Dashboard</Button>
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-violet-50">Dashboard</Button>
                 </Link>
                 <Link href="/event-types">
-                  <Button variant="ghost">Event Types</Button>
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-violet-50">Event Types</Button>
+                </Link>
+                <Link href="/availability">
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-violet-50">Availability</Button>
                 </Link>
                 <Link href="/bookings">
-                  <Button variant="ghost">Bookings</Button>
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-violet-50">Bookings</Button>
                 </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full ml-2">
+                      <Avatar className="h-10 w-10 ring-2 ring-violet-100 transition-all hover:ring-violet-200">
+                        <AvatarFallback className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium">
                           {user?.name ? getInitials(user.name) : 'U'}
                         </AvatarFallback>
                       </Avatar>
@@ -94,30 +101,39 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
+                      <Link href="/availability" className="cursor-pointer">
+                        <CalendarClock className="mr-2 h-4 w-4" />
+                        Availability
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link href="/settings" className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
                       <LogOut className="mr-2 h-4 w-4" />
                       Log out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
-            ) : (
+            ) : showUnauthenticatedUI ? (
               <>
                 <Link href="/login">
-                  <Button variant="ghost">Sign In</Button>
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900">Sign In</Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
+                  <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/25">
                     Get Started
                   </Button>
                 </Link>
               </>
+            ) : (
+              // Loading placeholder during hydration
+              <div className="w-24 h-10 bg-gray-100 animate-pulse rounded-lg" />
             )}
           </div>
 
@@ -130,10 +146,10 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px]">
               <div className="flex flex-col gap-4 mt-8">
-                {isAuthenticated ? (
+                {showAuthenticatedUI ? (
                   <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <Avatar className="h-12 w-12">
+                    <div className="flex items-center gap-3 mb-4 pb-4 border-b">
+                      <Avatar className="h-12 w-12 ring-2 ring-violet-100">
                         <AvatarFallback className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
                           {user?.name ? getInitials(user.name) : 'U'}
                         </AvatarFallback>
@@ -151,8 +167,14 @@ export function Navbar() {
                     </Link>
                     <Link href="/event-types" onClick={() => setOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
-                        <Calendar className="mr-2 h-4 w-4" />
+                        <CalendarCheck className="mr-2 h-4 w-4" />
                         Event Types
+                      </Button>
+                    </Link>
+                    <Link href="/availability" onClick={() => setOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start">
+                        <CalendarClock className="mr-2 h-4 w-4" />
+                        Availability
                       </Button>
                     </Link>
                     <Link href="/bookings" onClick={() => setOpen(false)}>
@@ -167,19 +189,21 @@ export function Navbar() {
                         Settings
                       </Button>
                     </Link>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        handleLogout();
-                        setOpen(false);
-                      }}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </Button>
+                    <div className="border-t pt-4 mt-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          handleLogout();
+                          setOpen(false);
+                        }}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </Button>
+                    </div>
                   </>
-                ) : (
+                ) : showUnauthenticatedUI ? (
                   <>
                     <Link href="/login" onClick={() => setOpen(false)}>
                       <Button variant="ghost" className="w-full">
@@ -192,7 +216,7 @@ export function Navbar() {
                       </Button>
                     </Link>
                   </>
-                )}
+                ) : null}
               </div>
             </SheetContent>
           </Sheet>

@@ -31,22 +31,31 @@ import {
   Settings,
   Loader2,
   Trash2,
-  Edit
+  Edit,
+  CalendarClock,
+  MoreVertical,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
 export default function EventTypesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isHydrated } = useAuthStore();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (isHydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isHydrated, router]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['eventTypes'],
@@ -69,7 +78,8 @@ export default function EventTypesPage() {
     },
   });
 
-  const copyLink = (slug: string) => {
+  const copyLink = (slug: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     const link = `${window.location.origin}/${user?.username}/${slug}`;
     navigator.clipboard.writeText(link);
     toast.success('Link copied to clipboard!');
@@ -88,15 +98,19 @@ export default function EventTypesPage() {
     }
   };
 
-  if (!isAuthenticated) {
-    return null;
+  if (!isHydrated || !isAuthenticated) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-violet-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Event Types</h1>
             <p className="text-muted-foreground mt-1">
@@ -104,7 +118,7 @@ export default function EventTypesPage() {
             </p>
           </div>
           <Link href="/event-types/new">
-            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
+            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5">
               <Plus className="h-4 w-4 mr-2" />
               New Event Type
             </Button>
@@ -118,101 +132,109 @@ export default function EventTypesPage() {
         ) : data && data.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.map((eventType) => (
-              <Card key={eventType.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+              <Card 
+                key={eventType.id} 
+                className="group hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer border-0 shadow-lg bg-white hover:-translate-y-1"
+                onClick={() => router.push(`/event-types/${eventType.id}`)}
+              >
                 <div 
-                  className="h-2" 
+                  className="h-2 transition-all group-hover:h-3" 
                   style={{ backgroundColor: eventType.color }}
                 />
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="truncate">{eventType.title}</span>
-                    <Badge variant="secondary" className="ml-2">
-                      {eventType._count?.bookings || 0}
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {eventType.description || 'No description'}
-                  </CardDescription>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <span className="truncate">{eventType.title}</span>
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 mt-1">
+                        {eventType.description || 'No description'}
+                      </CardDescription>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/event-types/${eventType.id}`); }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Event
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/availability?eventTypeId=${eventType.id}`); }}>
+                          <CalendarClock className="h-4 w-4 mr-2" />
+                          Set Availability
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => copyLink(eventType.slug, e)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/${user?.username}/${eventType.slug}`, '_blank'); }}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Preview
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(eventType.id); }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
+                    <span className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-full">
+                      <Clock className="h-3.5 w-3.5" />
                       {eventType.durationMinutes} min
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-full">
                       {getLocationIcon(eventType.locationType)}
                       {eventType.locationType.replace('_', ' ')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-violet-100 text-violet-700 hover:bg-violet-100">
+                        {eventType._count?.bookings || 0} bookings
+                      </Badge>
+                      {eventType.availabilityRules && eventType.availabilityRules.length > 0 && (
+                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                          <CalendarClock className="h-3 w-3 mr-1" />
+                          Active
+                        </Badge>
+                      )}
+                    </div>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="flex-1"
-                      onClick={() => copyLink(eventType.slug)}
+                      className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                      onClick={(e) => copyLink(eventType.slug, e)}
                     >
                       <Copy className="h-4 w-4 mr-1" />
                       Copy
                     </Button>
-                    <Link href={`/${user?.username}/${eventType.slug}`} target="_blank">
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link href={`/event-types/${eventType.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Dialog open={deleteId === eventType.id} onOpenChange={(open) => !open && setDeleteId(null)}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setDeleteId(eventType.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Delete Event Type</DialogTitle>
-                          <DialogDescription>
-                            Are you sure you want to delete &quot;{eventType.title}&quot;? This action cannot be undone and will delete all associated bookings.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setDeleteId(null)}>
-                            Cancel
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            onClick={() => deleteMutation.mutate(eventType.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            {deleteMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Delete'
-                            )}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="bg-violet-100 p-4 rounded-full mb-4">
-                <Calendar className="h-8 w-8 text-violet-600" />
+          <Card className="border-dashed border-2 bg-white/50">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <div className="bg-gradient-to-r from-violet-100 to-indigo-100 p-5 rounded-full mb-6">
+                <Calendar className="h-10 w-10 text-violet-600" />
               </div>
-              <CardTitle className="text-xl mb-2">No event types yet</CardTitle>
-              <CardDescription className="text-center mb-4">
-                Create your first event type to start accepting bookings
+              <CardTitle className="text-2xl mb-2">No event types yet</CardTitle>
+              <CardDescription className="text-center mb-6 max-w-md">
+                Create your first event type to start accepting bookings from your clients and colleagues
               </CardDescription>
               <Link href="/event-types/new">
-                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Event Type
                 </Button>
@@ -220,6 +242,34 @@ export default function EventTypesPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Delete Dialog */}
+        <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Event Type</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this event type? This action cannot be undone and will delete all associated bookings.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteId(null)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteId && deleteMutation.mutate(deleteId)}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Delete'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
