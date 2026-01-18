@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.routes"
 import publicRoutes from "./routes/public.routes"
 import availabilityRoutes from "./routes/availability.routes"
 import bookingRoutes from "./routes/booking.routes"
+import healthRoutes from "./routes/health.route"
 import './jobs/reminder.job'
 
 const app = express();
@@ -29,6 +30,8 @@ app.use("/api/user", userRoutes)
 app.use("/api/public", publicRoutes)
 app.use("/api/availability", availabilityRoutes)
 app.use("/api/booking", bookingRoutes)
+app.use("/api/health", healthRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

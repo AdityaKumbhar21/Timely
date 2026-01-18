@@ -10,7 +10,7 @@ interface BookingWithRelations extends Booking{
 }
 
 export const sendVerificationEmail = async(email: string, name: string, code: string) =>{
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${code}&email=${email}`
+    const verificationLink = `${process.env.FRONTEND_URL}/verify?code=${code}&email=${encodeURIComponent(email)}`
 
     await resend.emails.send({
         from: 'onboarding@resend.dev',

@@ -24,6 +24,8 @@ export const getPublicEventType = async(req: Request, res: Response) =>{
                 bufferAfterMinutes: true,
                 bufferBeforeMinutes: true,
                 color: true,
+                availableFrom: true,
+                availableTo: true,
                 user: {
                     select: {
                         name: true,

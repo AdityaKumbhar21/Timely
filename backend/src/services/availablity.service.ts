@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import {DateTime} from "luxon";
-import {addMinutes, isWithinInterval, areIntervalsOverlapping} from "date-fns"
+import {addMinutes, isWithinInterval, areIntervalsOverlapping, isBefore, isAfter, startOfDay} from "date-fns"
 
 
 const prisma = new PrismaClient()
@@ -26,11 +26,42 @@ export const getAvailableSlots = async(
 
     const hostTimezone = eventType.user?.timezone || "UTC"
 
+    // Apply availability window constraints
+    let effectiveStartDate = startDate;
+    let effectiveEndDate = endDate;
+    
+    // If availableFrom is set, don't show slots before it
+    if (eventType.availableFrom) {
+        const availableFromDate = new Date(eventType.availableFrom);
+        if (isAfter(availableFromDate, startDate)) {
+            effectiveStartDate = availableFromDate;
+        }
+    }
+    
+    // If availableTo is set, don't show slots after it
+    if (eventType.availableTo) {
+        const availableToDate = new Date(eventType.availableTo);
+        if (isBefore(availableToDate, endDate)) {
+            effectiveEndDate = availableToDate;
+        }
+    }
+    
+    // Don't show slots in the past
+    const now = new Date();
+    if (isBefore(effectiveStartDate, now)) {
+        effectiveStartDate = now;
+    }
+    
+    // If the effective date range is invalid, return empty slots
+    if (isAfter(effectiveStartDate, effectiveEndDate)) {
+        return [];
+    }
+
     const existingBookings = await prisma.booking.findMany({
         where: {
             eventTypeId,
-            startTime: {gte: startDate},
-            endTime: {lte: endDate},
+            startTime: {gte: effectiveStartDate},
+            endTime: {lte: effectiveEndDate},
             status: "CONFIRMED"
         },
         select:{
@@ -46,8 +77,8 @@ export const getAvailableSlots = async(
 
     const slots: Slot[] = []
 
-    let current = DateTime.fromJSDate(startDate).setZone(hostTimezone).startOf("day")
-    const end = DateTime.fromJSDate(endDate).setZone(hostTimezone).endOf("day")
+    let current = DateTime.fromJSDate(effectiveStartDate).setZone(hostTimezone).startOf("day")
+    const end = DateTime.fromJSDate(effectiveEndDate).setZone(hostTimezone).endOf("day")
 
     while(current <= end){
         const dayOfWeek = current.weekday
@@ -69,6 +100,12 @@ export const getAvailableSlots = async(
                 const proposedEnd = addMinutes(slotStart, eventType.durationMinutes)
 
                 if(proposedEnd > slotEnd) break
+                
+                // Skip slots in the past
+                if (isBefore(slotStart, now)) {
+                    slotStart = proposedEnd;
+                    continue;
+                }
 
                 const effectiveStart = addMinutes(slotStart, -eventType.bufferBeforeMinutes)
                 const effectiveEnd = addMinutes(proposedEnd, eventType.bufferAfterMinutes)

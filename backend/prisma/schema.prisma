@@ -49,6 +49,8 @@ model EventType{
   dailyLimit Int?
   color String @default("#3498db")
   defaultVideoLink String?
+  availableFrom DateTime?  // Start date for availability window
+  availableTo DateTime?    // End date for availability window
   bookings Booking[]
   availabilityRules AvailabilityRule[]
   customQuestions CustomQuestion[]
@@ -63,7 +65,7 @@ model EventType{
 model AvailabilityRule{
   id String @id @default(uuid())
   eventTypeId String 
-  dayOfWeek Int  // day of week will be 0 - Monday ... 6 - Sunday
+  dayOfWeek Int  // day of week: 1 = Monday, 2 = Tuesday, ..., 7 = Sunday (Luxon weekday convention)
   startTime String
   endTime String
   dateOverride DateTime?
